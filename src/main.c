@@ -1,0 +1,118 @@
+/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/*
+ * main.c
+ * Copyright (C) 2012 Gopal Krishnan <ingeniumed@Skynet>
+ * 
+ * history-panel-prototype is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * history-panel-prototype is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <config.h>
+#include <gtk/gtk.h>
+#include <glib/gi18n.h>
+
+//structure holding the input box, output box, buffer for the output box and the iteration counter for the buffer
+typedef struct inputoutput{
+	GtkWidget *entry_user;
+	GtkWidget *output_calc;
+} inputoutput;
+
+//displays in output box
+static void
+calculate_equal (GtkWidget *widget,
+     inputoutput *inout)
+{   
+	//getting the text entered by the user from the entry box 
+	GtkTextBuffer *buffer;
+    GtkTextMark *mark;
+    GtkTextIter iter;
+	gchar *entry_text;
+	entry_text = gtk_entry_get_text(GTK_ENTRY(inout->entry_user));
+	buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (inout->output_calc));
+	mark = gtk_text_buffer_get_insert (buffer);
+	gtk_text_buffer_get_iter_at_mark (buffer, &iter, mark);
+	if (gtk_entry_get_text_length(GTK_ENTRY(inout->entry_user))!=0){
+		gtk_text_buffer_insert (buffer, &iter, entry_text, -1);
+		gtk_text_buffer_insert (buffer, &iter, "\n", 1);
+		gtk_text_buffer_insert (buffer, &iter, "10", -1);
+		gtk_text_buffer_insert (buffer, &iter, "\n", 1);
+	}
+}
+
+int
+main (int argc, char *argv[])
+{   			
+ 	GtkWidget *window;
+	GtkWidget *swindow;
+	GtkWidget *button;
+	GtkWidget *vbox;
+	inputoutput inout;
+#ifdef ENABLE_NLS
+	bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
+	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+	textdomain (GETTEXT_PACKAGE);
+#endif
+
+	gtk_init (&argc, &argv);
+
+	//initiate the window's height as well as the title of it
+	window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title (GTK_WINDOW (window), " Prototype");
+	gtk_container_set_border_width(GTK_CONTAINER(window),5);
+	gtk_window_set_default_size(GTK_WINDOW(window),210,210);
+	gtk_window_set_resizable(GTK_WINDOW(window),TRUE);
+
+	//setting the layout to be vertical for all of them
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL,1);
+	gtk_box_set_homogeneous (GTK_BOX(vbox),TRUE);
+	gtk_container_add(GTK_CONTAINER(window),vbox);	
+
+	//allowing the history panel to be scrollable
+	swindow=gtk_scrolled_window_new(NULL,NULL);
+	gtk_container_add(GTK_CONTAINER(window),swindow);
+
+	//create a new button with a label as mentioned belo
+	button = gtk_button_new_with_label ("EQUALS");
+
+	//input box where numbers are inserted
+	inout.entry_user = gtk_entry_new();
+	gtk_entry_set_alignment(GTK_ENTRY(inout.entry_user),GTK_ALIGN_START);
+	
+	//creating the history panel
+	inout.output_calc = gtk_text_view_new();
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(inout.output_calc), GTK_WRAP_WORD);
+    gtk_widget_set_can_focus(inout.output_calc, TRUE);
+    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(inout.output_calc), FALSE);
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(inout.output_calc), FALSE);
+    gtk_text_view_set_justification(GTK_TEXT_VIEW(inout.output_calc), GTK_JUSTIFY_LEFT);
+
+	//adding the history box to the scrollable window
+	gtk_container_add(GTK_CONTAINER(swindow),inout.output_calc);
+
+	//packaging them up into the vertical box
+	gtk_box_pack_start(GTK_BOX(vbox),swindow,TRUE,TRUE,0);
+	gtk_box_pack_start(GTK_BOX(vbox),inout.entry_user,TRUE,TRUE,0);
+	gtk_box_pack_start(GTK_BOX(vbox),button,TRUE,TRUE,0);
+	
+	//connect the print hello function to this button when its clicked
+	g_signal_connect (button, "clicked", G_CALLBACK (calculate_equal),&inout);
+
+	//connect the exit signal to the destory signal when closing the window
+	g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
+	
+	gtk_widget_show_all (window);
+
+	gtk_main ();
+
+	return 0;
+}
